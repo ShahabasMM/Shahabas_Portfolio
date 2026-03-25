@@ -1,0 +1,222 @@
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;600;800&family=Poppins:wght@400;600;700&family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #fe1f19;
+  --color-accent: #0f0f0f;
+  --color-secondary: #ffffff;
+  --font-poppins: "Sora", "Poppins", sans-serif;
+  --font-sora: "Sora", "Poppins", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px #fe1f19, 0 0 10px #fe1f19; }
+  100% { box-shadow: 0 0 20px #fe1f19, 0 0 40px #fe1f19; }
+}
+
+:root {
+  --primary: #fe1f19;
+  --accent: #0f0f0f;
+}
+
+body {
+  background-color: var(--accent);
+  color: white;
+  font-family: var(--font-inter);
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(254, 31, 25, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 0% 0%, rgba(254, 31, 25, 0.03) 0%, transparent 30%);
+  background-attachment: fixed;
+}
+
+body.has-minimal-cursor {
+  cursor: none;
+}
+
+body.has-minimal-cursor * {
+  cursor: none !important;
+}
+
+h1,
+h2,
+h3,
+.hero-title,
+.section-title {
+  font-family: var(--font-sora);
+}
+
+h1,
+.hero-title {
+  font-weight: 800;
+}
+
+h2,
+h3,
+.section-title {
+  font-weight: 600;
+}
+
+code,
+pre,
+label,
+.code-text,
+.badge,
+.terminal {
+  font-family: var(--font-mono);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.glass {
+  @apply bg-white/5 backdrop-blur-lg border border-white/10;
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(254, 31, 25, 0.5), 0 0 20px rgba(254, 31, 25, 0.3);
+}
+
+.red-glow-border {
+  @apply border border-primary/20 hover:border-primary/50 transition-colors duration-300;
+  box-shadow: 0 0 15px rgba(254, 31, 25, 0.1);
+}
+
+.red-glow-border:hover {
+  box-shadow: 0 0 25px rgba(254, 31, 25, 0.3);
+}
+
+.hero-name-wrap {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.hero-image-wrap {
+  position: relative;
+  width: min(92vw, 760px);
+  display: flex;
+  justify-content: center;
+  z-index: 3;
+}
+
+.hero-name-image {
+  width: 85%;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  filter:
+    drop-shadow(0 0 20px rgba(254, 31, 25, 0.32))
+    drop-shadow(0 14px 28px rgba(0, 0, 0, 0.38));
+}
+
+.hero-poster-name {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  text-transform: uppercase;
+  font-family: "Anton", "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: clamp(3rem, 12.2vw, 9.8rem);
+  font-weight: 400;
+  letter-spacing: 0.012em;
+  line-height: 0.85;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.92) 0%, rgba(245, 245, 245, 0.92) 28%, rgba(220, 220, 220, 0.88) 70%, rgba(200, 200, 200, 0.86) 100%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.06) 1px, rgba(0, 0, 0, 0.035) 1px, rgba(0, 0, 0, 0.035) 2px);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.06);
+}
+
+.hero-name-slash {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  width: min(84vw, 860px);
+  height: clamp(36px, 6.5vw, 84px);
+  transform: translate(-50%, -44%) rotate(-7deg);
+  background:
+    linear-gradient(180deg, rgba(254, 31, 25, 0.98) 0%, rgba(254, 31, 25, 0.9) 74%, rgba(254, 31, 25, 0.8) 100%);
+  clip-path: polygon(
+    0% 34%,
+    8% 22%,
+    15% 30%,
+    24% 20%,
+    36% 33%,
+    45% 18%,
+    56% 32%,
+    67% 21%,
+    77% 36%,
+    88% 24%,
+    100% 38%,
+    100% 66%,
+    92% 78%,
+    83% 69%,
+    72% 82%,
+    60% 69%,
+    51% 84%,
+    40% 68%,
+    30% 81%,
+    18% 66%,
+    9% 76%,
+    0% 64%
+  );
+  filter: drop-shadow(0 0 14px rgba(254, 31, 25, 0.45));
+}
+
+.minimal-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform: translate3d(-100px, -100px, 0) scale(1);
+  pointer-events: none;
+  z-index: 10000;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  margin-top: -3px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  will-change: transform;
+  transition: none;
+}
+
+@media (max-width: 768px), (pointer: coarse) {
+  body.has-minimal-cursor,
+  body.has-minimal-cursor * {
+    cursor: auto !important;
+  }
+  .minimal-cursor {
+    display: none !important;
+  }
+}
+
+@layer utilities {
+  .clip-path-slant {
+    clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-accent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-colors;
+}
