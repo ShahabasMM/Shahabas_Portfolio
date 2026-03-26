@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import AdminPanel from './components/admin/AdminPanel';
 import { ContentProvider } from './context/ContentContext';
 import CustomCursor from './components/CustomCursor';
+import { Toaster } from 'react-hot-toast';
 
 const App = () => {
   const [pathname, setPathname] = useState(window.location.pathname);
@@ -24,6 +25,7 @@ const App = () => {
   if (pathname.startsWith('/admin')) {
     return (
       <ContentProvider>
+        <Toaster position="top-right" />
         <AdminPanel />
       </ContentProvider>
     );
@@ -31,6 +33,7 @@ const App = () => {
 
   return (
     <ContentProvider>
+      <Toaster position="top-right" />
       <div className="relative min-h-screen">
         <CustomCursor />
 

@@ -5,6 +5,7 @@ import {
   Braces,
   Eye,
   FolderKanban,
+  Loader2,
   LogOut,
   Mail,
   Paperclip,
@@ -20,20 +21,12 @@ import AdminTopbar from './ui/AdminTopbar';
 import AdminTableShell from './ui/AdminTableShell';
 import { PROJECT_STATUS_OPTIONS, getProjectStatusMeta } from '../../utils/projectStatus';
 
-const ADMIN_EMAIL = 'shahabas.trla@gmail.com';
-const ADMIN_PASSWORD = 'shahabas@208';
-const AUTH_KEY = 'portfolio_admin_auth_v1';
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
-
-const allowedExtensions = new Set([
-  'pdf', 'zip', 'png', 'jpg', 'jpeg', 'webp', 'svg', 'gif',
-  'txt', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv', 'rar', '7z',
-]);
 
 const managementItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'projects', label: 'Projects', icon: FolderKanban },
-  { id: 'skills', label: 'Tech Stack', icon: Braces },
+  { id: 'skills', label: 'Skills', icon: Braces },
   { id: 'contacts', label: 'Contacts', icon: Mail },
 ];
 
@@ -42,48 +35,54 @@ const settingsItems = [{ id: 'settings', label: 'Settings', icon: Settings }];
 const titleByTab = {
   dashboard: 'Dashboard',
   projects: 'Project Management',
-  skills: 'Tech Stack',
+  skills: 'Skill Management',
   contacts: 'Contact Inbox',
   settings: 'Settings',
 };
 
-const deriveFileNameFromUrl = (url, fallback = '') => {
-  if (!url) return fallback;
-  try {
-    const parsed = new URL(url);
-    const last = parsed.pathname.split('/').pop();
-    return last ? decodeURIComponent(last) : fallback;
-  } catch {
-    return fallback;
-  }
-};
+const TableLoadingRows = ({ cols }) => (
+  <>
+    {[...Array(4)].map((_, index) => (
+      <tr key={`row-${index}`} className="border-b border-white/6">
+        {[...Array(cols)].map((__, cell) => (
+          <td key={`cell-${cell}`} className="px-4 py-3.5">
+            <div className="h-4 bg-white/10 rounded animate-pulse" />
+          </td>
+        ))}
+      </tr>
+    ))}
+  </>
+);
 
-const LoginView = ({ onAuth }) => {
+const LoginView = ({ onAuth, loading }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      localStorage.setItem(AUTH_KEY, 'true');
-      onAuth(true);
-      return;
+    setError('');
+    try {
+      await onAuth({ email, password });
+    } catch (authError) {
+      setError(authError.message || 'Login failed.');
     }
-    setError('Invalid credentials');
   };
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center px-4">
       <AdminCard className="w-full max-w-md p-8">
-        <h1 className="text-3xl font-bold mb-2">Portfolio Admin</h1>
-        <p className="text-gray-400 mb-6">Sign in to manage projects, skills, and contact messages.</p>
+        <h1 className="text-3xl font-bold mb-2">Shahabas Admin</h1>
+        <p className="text-gray-400 mb-6">Sign in with your Supabase admin account.</p>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <InputField label="Email" value={email} onChange={setEmail} placeholder="admin@example.com" type="email" />
           <InputField label="Password" value={password} onChange={setPassword} placeholder="********" type="password" />
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
-          <button className="w-full h-11 rounded-xl bg-primary font-semibold hover:shadow-[0_0_24px_rgba(254,31,25,0.45)] transition-all">
-            Login
+          <button
+            disabled={loading}
+            className="w-full h-11 rounded-xl bg-primary font-semibold hover:shadow-[0_0_24px_rgba(254,31,25,0.45)] transition-all disabled:opacity-60"
+          >
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </AdminCard>
@@ -111,7 +110,7 @@ const InputField = ({ label, value, onChange, placeholder, type = 'text' }) => (
   </div>
 );
 
-const ActionButton = ({ variant = 'secondary', onClick, children, className = '' }) => {
+const ActionButton = ({ variant = 'secondary', onClick, children, className = '', disabled = false }) => {
   const base = 'h-9 px-3 rounded-lg text-sm font-medium transition-all inline-flex items-center gap-2';
   const variantClass =
     variant === 'primary'
@@ -120,64 +119,33 @@ const ActionButton = ({ variant = 'secondary', onClick, children, className = ''
       ? 'bg-red-500/18 text-red-300 border border-red-500/30 hover:bg-red-500/25'
       : 'bg-white/[0.04] border border-white/12 hover:border-primary/50';
   return (
-    <button onClick={onClick} className={`${base} ${variantClass} ${className}`}>
+    <button disabled={disabled} onClick={onClick} className={`${base} ${variantClass} ${className} disabled:opacity-50`}>
       {children}
     </button>
   );
 };
 
-const AddSkillInput = ({ group, onUpdate }) => {
-  const [value, setValue] = useState('');
-  const add = () => {
-    const item = value.trim();
-    if (!item) return;
-    if (group.skills.some((skill) => skill.toLowerCase() === item.toLowerCase())) return;
-    onUpdate(group.id, { skills: [...group.skills, item] });
-    setValue('');
-  };
-
-  return (
-    <div className="mt-3 flex gap-2">
-      <InputField label="" value={value} onChange={setValue} placeholder="Add new skill" />
-      <ActionButton onClick={add}>Add</ActionButton>
-    </div>
-  );
-};
-
-const ProjectForm = ({ initial, onSubmit }) => {
+const ProjectForm = ({ initial, onSubmit, submitting }) => {
   const [title, setTitle] = useState(initial?.title || '');
   const [description, setDescription] = useState(initial?.description || '');
-  const [tags, setTags] = useState(initial?.tags || '');
+  const [tags, setTags] = useState(initial?.tags?.join(', ') || '');
   const [github, setGithub] = useState(initial?.github || '');
   const [demo, setDemo] = useState(initial?.demo || '');
   const [status, setStatus] = useState(initial?.status || 'not_started');
   const [fileUrl, setFileUrl] = useState(initial?.fileUrl || '');
-  const [fileName, setFileName] = useState(initial?.fileName || '');
+  const [file, setFile] = useState(null);
   const [error, setError] = useState('');
 
   const handleFileInput = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.size > MAX_FILE_SIZE_BYTES) {
+    const selected = event.target.files?.[0];
+    if (!selected) return;
+    if (selected.size > MAX_FILE_SIZE_BYTES) {
       setError('File size must be 8MB or smaller.');
       event.target.value = '';
       return;
     }
-    const extension = file.name.split('.').pop()?.toLowerCase() || '';
-    if (!allowedExtensions.has(extension)) {
-      setError('Unsupported file type.');
-      event.target.value = '';
-      return;
-    }
     setError('');
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setFileUrl(reader.result);
-        setFileName(file.name);
-      }
-    };
-    reader.readAsDataURL(file);
+    setFile(selected);
   };
 
   const submit = (event) => {
@@ -185,12 +153,15 @@ const ProjectForm = ({ initial, onSubmit }) => {
     onSubmit({
       title: title.trim(),
       description: description.trim(),
-      tags: tags.split(',').map((item) => item.trim()).filter(Boolean),
+      tags: tags
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
       github: github.trim() || '#',
       demo: demo.trim() || '#',
       status,
       fileUrl: fileUrl.trim(),
-      fileName: fileName.trim() || deriveFileNameFromUrl(fileUrl, ''),
+      file,
     });
   };
 
@@ -228,24 +199,88 @@ const ProjectForm = ({ initial, onSubmit }) => {
           ))}
         </select>
       </div>
-      <InputField label="Attach File URL" value={fileUrl} onChange={setFileUrl} placeholder="https://example.com/file.pdf" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InputField label="File Name" value={fileName} onChange={setFileName} placeholder="document.pdf" />
-        <div className="space-y-2">
-          <label className="text-xs uppercase tracking-[0.2em] text-gray-500">Attach File Upload</label>
-          <input
-            type="file"
-            onChange={handleFileInput}
-            className="w-full h-11 rounded-xl bg-[#131313] border border-white/12 px-3 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-primary/20"
-          />
-        </div>
+      <InputField label="Attachment URL (optional)" value={fileUrl} onChange={setFileUrl} placeholder="https://example.com/file.pdf" />
+      <div className="space-y-2">
+        <label className="text-xs uppercase tracking-[0.2em] text-gray-500">Attach File Upload</label>
+        <input
+          type="file"
+          onChange={handleFileInput}
+          className="w-full h-11 rounded-xl bg-[#131313] border border-white/12 px-3 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-primary/20"
+        />
       </div>
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
       <div className="pt-2">
-        <ActionButton variant="primary" className="h-11 px-5">
+        <ActionButton variant="primary" className="h-11 px-5" disabled={submitting}>
+          {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
           Save Project
         </ActionButton>
       </div>
+    </form>
+  );
+};
+
+const SkillForm = ({ initial, onSubmit, submitting, categories }) => {
+  const [name, setName] = useState(initial?.name || '');
+  const [category, setCategory] = useState(initial?.category || '');
+  const [customCategory, setCustomCategory] = useState('');
+
+  const submit = (event) => {
+    event.preventDefault();
+    const resolvedCategory = category === '__custom__' ? customCategory.trim() : category.trim();
+    onSubmit({ name: name.trim(), category: resolvedCategory });
+  };
+
+  return (
+    <form className="space-y-4" onSubmit={submit}>
+      <InputField label="Skill Name" value={name} onChange={setName} placeholder="React.js" />
+      <div className="space-y-2">
+        <label className="text-xs uppercase tracking-[0.2em] text-gray-500">Category</label>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full h-11 rounded-xl bg-[#131313] border border-white/12 px-3 focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(254,31,25,0.15)] transition-all"
+        >
+          <option value="" className="bg-[#131313]">
+            Select category
+          </option>
+          {categories.map((item) => (
+            <option key={item} value={item} className="bg-[#131313]">
+              {item}
+            </option>
+          ))}
+          <option value="__custom__" className="bg-[#131313]">
+            + Create New Category
+          </option>
+        </select>
+      </div>
+      {category === '__custom__' ? (
+        <InputField label="New Category Name" value={customCategory} onChange={setCustomCategory} placeholder="Frontend Development" />
+      ) : null}
+      <ActionButton variant="primary" className="h-11 px-5" disabled={submitting}>
+        {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+        Save Skill
+      </ActionButton>
+    </form>
+  );
+};
+
+const CategoryForm = ({ onSubmit, submitting }) => {
+  const [category, setCategory] = useState('');
+  const [firstSkill, setFirstSkill] = useState('');
+
+  const submit = (event) => {
+    event.preventDefault();
+    onSubmit({ category: category.trim(), firstSkill: firstSkill.trim() });
+  };
+
+  return (
+    <form className="space-y-4" onSubmit={submit}>
+      <InputField label="Category Name" value={category} onChange={setCategory} placeholder="Frontend Development" />
+      <InputField label="First Skill" value={firstSkill} onChange={setFirstSkill} placeholder="React.js" />
+      <ActionButton variant="primary" className="h-11 px-5" disabled={submitting}>
+        {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+        Create Category
+      </ActionButton>
     </form>
   );
 };
@@ -255,31 +290,47 @@ const AdminPanel = () => {
     skills,
     projects,
     submissions,
+    highlightedProjectIds,
+    highlightedSkillIds,
+    highlightedSubmissionIds,
     unreadSubmissions,
-    addSkillGroup,
-    updateSkillGroup,
-    deleteSkillGroup,
+    loading,
+    authLoading,
+    adminSession,
+    loginAdmin,
+    logoutAdmin,
+    addSkill,
+    updateSkill,
+    deleteSkill,
     addProject,
     updateProject,
     deleteProject,
-    markSubmissionRead,
     deleteSubmission,
+    markSubmissionRead,
   } = useContent();
 
-  const [authed, setAuthed] = useState(() => localStorage.getItem(AUTH_KEY) === 'true');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [projectModal, setProjectModal] = useState({ open: false, edit: null });
+  const [skillModal, setSkillModal] = useState({ open: false, edit: null });
+  const [categoryModal, setCategoryModal] = useState({ open: false });
   const [messageModal, setMessageModal] = useState({ open: false, data: null });
+  const [savingProject, setSavingProject] = useState(false);
+  const [savingSkill, setSavingSkill] = useState(false);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [loginPending, setLoginPending] = useState(false);
 
   const filteredProjects = projects.filter((project) =>
     [project.title, project.description, project.tags.join(' ')].join(' ').toLowerCase().includes(query.toLowerCase())
   );
-  const filteredSkills = skills.filter((group) =>
-    [group.title, group.skills.join(' ')].join(' ').toLowerCase().includes(query.toLowerCase())
+
+  const filteredSkills = skills.filter((skill) =>
+    [skill.name, skill.category].join(' ').toLowerCase().includes(query.toLowerCase())
   );
+  const categoryOptions = [...new Set(skills.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
   const filteredMessages = submissions.filter((item) =>
     [item.name, item.email, item.message].join(' ').toLowerCase().includes(query.toLowerCase())
   );
@@ -288,18 +339,35 @@ const AdminPanel = () => {
     () =>
       submissions
         .slice(0, 6)
-        .map((item) => ({ id: item.id, text: `Message from ${item.name}`, time: new Date(item.createdAt).toLocaleString() })),
+        .map((item) => ({ id: item.id, text: `Message from ${item.name}`, time: new Date(item.created_at).toLocaleString() })),
     [submissions]
   );
 
   const sidebarOffset = collapsed ? 'md:ml-[88px]' : 'md:ml-[270px]';
 
-  const logout = () => {
-    localStorage.removeItem(AUTH_KEY);
-    setAuthed(false);
-  };
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
+  }
 
-  if (!authed) return <LoginView onAuth={setAuthed} />;
+  if (!adminSession) {
+    return (
+      <LoginView
+        loading={loginPending}
+        onAuth={async (payload) => {
+          setLoginPending(true);
+          try {
+            await loginAdmin(payload);
+          } finally {
+            setLoginPending(false);
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white bg-[radial-gradient(circle_at_10%_10%,rgba(254,31,25,0.08),transparent_35%),radial-gradient(circle_at_95%_5%,rgba(254,31,25,0.05),transparent_28%)]">
@@ -321,7 +389,7 @@ const AdminPanel = () => {
           query={query}
           setQuery={setQuery}
           onOpenMobileSidebar={() => setMobileOpen(true)}
-          onLogout={logout}
+          onLogout={logoutAdmin}
         />
 
         <main className="px-4 md:px-6 xl:px-8 py-6">
@@ -332,8 +400,8 @@ const AdminPanel = () => {
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <StatCard title="Total Projects" value={projects.length} />
-                      <StatCard title="Total Skills" value={skills.reduce((sum, item) => sum + item.skills.length, 0)} />
-                      <StatCard title="New Messages" value={unreadSubmissions} accent />
+                      <StatCard title="Total Skills" value={skills.length} />
+                      <StatCard title="Messages" value={submissions.length} accent />
                     </div>
                     <AdminCard className="p-5 md:p-6">
                       <h2 className="text-2xl font-bold mb-4">Recent Activity</h2>
@@ -370,85 +438,102 @@ const AdminPanel = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredProjects.map((project) => (
-                          <tr key={project.id} className="border-b border-white/6 hover:bg-white/[0.03] transition-colors">
-                            <td className="px-4 py-3.5 font-semibold">{project.title}</td>
-                            <td className="px-4 py-3.5 text-gray-300">{project.description.slice(0, 90)}</td>
-                            <td className="px-4 py-3.5">
-                              <div className="flex flex-wrap gap-1.5">
-                                {project.tags.map((tag) => (
-                                  <span key={`${project.id}-${tag}`} className="px-2 py-1 rounded-full text-xs border border-white/12 bg-white/[0.03]">
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getProjectStatusMeta(project.status).adminClass}`}>
-                                {getProjectStatusMeta(project.status).label}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3.5">
-                              {project.fileUrl ? (
-                                <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary">
-                                  <Paperclip size={12} /> Attached
+                        {loading.projects ? <TableLoadingRows cols={6} /> : null}
+                        {!loading.projects &&
+                          filteredProjects.map((project) => (
+                            <tr
+                              key={project.id}
+                              className={`border-b border-white/6 hover:bg-white/[0.03] transition-colors ${
+                                highlightedProjectIds.includes(project.id) ? 'bg-primary/8 shadow-[inset_0_0_0_1px_rgba(254,31,25,0.35)]' : ''
+                              }`}
+                            >
+                              <td className="px-4 py-3.5 font-semibold">{project.title}</td>
+                              <td className="px-4 py-3.5 text-gray-300">{project.description.slice(0, 90)}</td>
+                              <td className="px-4 py-3.5">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {project.tags.map((tag) => (
+                                    <span key={`${project.id}-${tag}`} className="px-2 py-1 rounded-full text-xs border border-white/12 bg-white/[0.03]">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getProjectStatusMeta(project.status).adminClass}`}>
+                                  {getProjectStatusMeta(project.status).label}
                                 </span>
-                              ) : (
-                                <span className="text-xs text-gray-500">None</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3.5">
-                              <div className="flex justify-end gap-2">
-                                <ActionButton onClick={() => setProjectModal({ open: true, edit: { ...project, tags: project.tags.join(', ') } })}>
-                                  Edit
-                                </ActionButton>
-                                <ActionButton variant="danger" onClick={() => deleteProject(project.id)}>
-                                  <Trash2 size={14} /> Delete
-                                </ActionButton>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                              <td className="px-4 py-3.5">
+                                {project.fileUrl ? (
+                                  <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary">
+                                    <Paperclip size={12} /> Attached
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-500">None</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3.5">
+                                <div className="flex justify-end gap-2">
+                                  <ActionButton onClick={() => setProjectModal({ open: true, edit: project })}>Edit</ActionButton>
+                                  <ActionButton variant="danger" onClick={() => deleteProject(project.id)}>
+                                    <Trash2 size={14} /> Delete
+                                  </ActionButton>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </AdminTableShell>
                 ) : null}
 
                 {activeTab === 'skills' ? (
-                  <AdminCard className="p-5 md:p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-2xl font-bold">Tech Stack</h2>
-                      <ActionButton variant="primary" onClick={() => addSkillGroup({ title: 'New Category', skills: [] })}>
-                        <Plus size={15} /> Add Category
-                      </ActionButton>
-                    </div>
-                    <div className="space-y-4">
-                      {filteredSkills.map((group) => (
-                        <div key={group.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <InputField label="" value={group.title} onChange={(value) => updateSkillGroup(group.id, { title: value })} placeholder="Category" />
-                            <ActionButton variant="danger" onClick={() => deleteSkillGroup(group.id)} className="shrink-0">
-                              <Trash2 size={14} />
-                            </ActionButton>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {group.skills.map((skill) => (
-                              <button
-                                key={`${group.id}-${skill}`}
-                                onClick={() =>
-                                  updateSkillGroup(group.id, { skills: group.skills.filter((item) => item !== skill) })
-                                }
-                                className="px-3 py-1 rounded-full text-sm border border-primary/30 bg-primary/10 hover:shadow-[0_0_14px_rgba(254,31,25,0.28)]"
-                              >
-                                {skill}
-                              </button>
-                            ))}
-                          </div>
-                          <AddSkillInput group={group} onUpdate={updateSkillGroup} />
-                        </div>
-                      ))}
-                    </div>
-                  </AdminCard>
+                  <AdminTableShell
+                    title="Skills"
+                    action={
+                      <div className="flex items-center gap-2">
+                        <ActionButton onClick={() => setCategoryModal({ open: true })}>
+                          <Plus size={15} /> Add Category
+                        </ActionButton>
+                        <ActionButton variant="primary" onClick={() => setSkillModal({ open: true, edit: null })}>
+                          <Plus size={15} /> Add Skill
+                        </ActionButton>
+                      </div>
+                    }
+                  >
+                    <table className="w-full text-sm">
+                      <thead className="text-left text-gray-400 border-b border-white/10">
+                        <tr>
+                          <th className="px-4 py-3">Name</th>
+                          <th className="px-4 py-3">Category</th>
+                          <th className="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading.skills ? <TableLoadingRows cols={3} /> : null}
+                        {!loading.skills &&
+                          filteredSkills.map((skill) => (
+                            <tr
+                              key={skill.id}
+                              className={`border-b border-white/6 hover:bg-white/[0.03] transition-colors ${
+                                highlightedSkillIds.includes(skill.id) ? 'bg-primary/8 shadow-[inset_0_0_0_1px_rgba(254,31,25,0.35)]' : ''
+                              }`}
+                            >
+                              <td className="px-4 py-3.5">{skill.name}</td>
+                              <td className="px-4 py-3.5 text-gray-300">{skill.category}</td>
+                              <td className="px-4 py-3.5">
+                                <div className="flex justify-end gap-2">
+                                  <ActionButton onClick={() => setSkillModal({ open: true, edit: skill })}>Edit</ActionButton>
+                                  <ActionButton variant="danger" onClick={() => deleteSkill(skill.id)}>
+                                    <Trash2 size={14} /> Delete
+                                  </ActionButton>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </AdminTableShell>
                 ) : null}
 
                 {activeTab === 'contacts' ? (
@@ -464,37 +549,46 @@ const AdminPanel = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredMessages.map((item) => (
-                          <tr key={item.id} className="border-b border-white/6 hover:bg-white/[0.03] transition-colors">
-                            <td className="px-4 py-3.5">
-                              <div className="flex items-center gap-2">
-                                {!item.isRead ? <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(254,31,25,0.75)]" /> : null}
-                                {item.name}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5 text-gray-300">{item.email}</td>
-                            <td className="px-4 py-3.5 text-gray-300">{item.message.slice(0, 70)}...</td>
-                            <td className="px-4 py-3.5 text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</td>
-                            <td className="px-4 py-3.5">
-                              <div className="flex justify-end gap-2">
-                                <ActionButton
-                                  onClick={() => {
-                                    setMessageModal({ open: true, data: item });
-                                    if (!item.isRead) markSubmissionRead(item.id, true);
-                                  }}
-                                >
-                                  <Eye size={14} /> View
-                                </ActionButton>
-                                <ActionButton onClick={() => markSubmissionRead(item.id, !item.isRead)}>
-                                  {item.isRead ? 'Unread' : 'Read'}
-                                </ActionButton>
-                                <ActionButton variant="danger" onClick={() => deleteSubmission(item.id)}>
-                                  <Trash2 size={14} />
-                                </ActionButton>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                        {loading.contacts ? <TableLoadingRows cols={5} /> : null}
+                        {!loading.contacts &&
+                          filteredMessages.map((item) => (
+                            <tr
+                              key={item.id}
+                              className={`border-b border-white/6 hover:bg-white/[0.03] transition-colors ${
+                                highlightedSubmissionIds.includes(item.id) ? 'bg-primary/8 shadow-[inset_0_0_0_1px_rgba(254,31,25,0.35)]' : ''
+                              }`}
+                            >
+                              <td className="px-4 py-3.5">
+                                <div className="flex items-center gap-2">
+                                  {!item.is_read ? <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(254,31,25,0.75)]" /> : null}
+                                  {item.name}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 text-gray-300">{item.email}</td>
+                              <td className="px-4 py-3.5 text-gray-300">{item.message.slice(0, 70)}...</td>
+                              <td className="px-4 py-3.5 text-gray-500">{new Date(item.created_at).toLocaleDateString()}</td>
+                              <td className="px-4 py-3.5">
+                                <div className="flex justify-end gap-2">
+                                  <ActionButton
+                                    onClick={() => {
+                                      setMessageModal({ open: true, data: item });
+                                      if (!item.is_read) {
+                                        markSubmissionRead(item.id, true);
+                                      }
+                                    }}
+                                  >
+                                    <Eye size={14} /> View
+                                  </ActionButton>
+                                  <ActionButton onClick={() => markSubmissionRead(item.id, !item.is_read)}>
+                                    {item.is_read ? 'Unread' : 'Read'}
+                                  </ActionButton>
+                                  <ActionButton variant="danger" onClick={() => deleteSubmission(item.id)}>
+                                    <Trash2 size={14} />
+                                  </ActionButton>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </AdminTableShell>
@@ -503,8 +597,8 @@ const AdminPanel = () => {
                 {activeTab === 'settings' ? (
                   <AdminCard className="p-5 md:p-6 max-w-2xl">
                     <h2 className="text-2xl font-bold mb-2">Admin Settings</h2>
-                    <p className="text-gray-400 mb-5">Logged in as {ADMIN_EMAIL}</p>
-                    <ActionButton variant="primary" onClick={logout} className="h-11 px-4">
+                    <p className="text-gray-400 mb-5">Signed in as {adminSession.user?.email}</p>
+                    <ActionButton variant="primary" onClick={logoutAdmin} className="h-11 px-4">
                       <LogOut size={15} /> Logout
                     </ActionButton>
                   </AdminCard>
@@ -522,10 +616,58 @@ const AdminPanel = () => {
       >
         <ProjectForm
           initial={projectModal.edit}
-          onSubmit={(payload) => {
-            if (projectModal.edit?.id) updateProject(projectModal.edit.id, payload);
-            else addProject(payload);
-            setProjectModal({ open: false, edit: null });
+          submitting={savingProject}
+          onSubmit={async (payload) => {
+            setSavingProject(true);
+            try {
+              if (projectModal.edit?.id) await updateProject(projectModal.edit.id, payload);
+              else await addProject(payload);
+              setProjectModal({ open: false, edit: null });
+            } finally {
+              setSavingProject(false);
+            }
+          }}
+        />
+      </AdminModal>
+
+      <AdminModal
+        open={skillModal.open}
+        title={skillModal.edit ? 'Edit Skill' : 'Add Skill'}
+        onClose={() => setSkillModal({ open: false, edit: null })}
+      >
+        <SkillForm
+          initial={skillModal.edit}
+          categories={categoryOptions}
+          submitting={savingSkill}
+          onSubmit={async (payload) => {
+            setSavingSkill(true);
+            try {
+              if (skillModal.edit?.id) await updateSkill(skillModal.edit.id, payload);
+              else await addSkill(payload);
+              setSkillModal({ open: false, edit: null });
+            } finally {
+              setSavingSkill(false);
+            }
+          }}
+        />
+      </AdminModal>
+
+      <AdminModal
+        open={categoryModal.open}
+        title="Create Category"
+        onClose={() => setCategoryModal({ open: false })}
+      >
+        <CategoryForm
+          submitting={savingCategory}
+          onSubmit={async ({ category, firstSkill }) => {
+            if (!category || !firstSkill) return;
+            setSavingCategory(true);
+            try {
+              await addSkill({ name: firstSkill, category });
+              setCategoryModal({ open: false });
+            } finally {
+              setSavingCategory(false);
+            }
           }}
         />
       </AdminModal>

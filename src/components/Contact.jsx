@@ -12,21 +12,31 @@ const Contact = () => {
     message: '',
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (field) => (event) => {
     setFormData((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    addSubmission(formData);
-    setFormData({
-      name: '',
-      email: '',
-      subject: '',
-      message: '',
-    });
-    setIsSubmitted(true);
+    setSubmitting(true);
+    try {
+      await addSubmission({
+        name: formData.name,
+        email: formData.email,
+        message: formData.subject ? `${formData.subject}\n\n${formData.message}` : formData.message,
+      });
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: '',
+      });
+      setIsSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -141,7 +151,7 @@ const Contact = () => {
                 <p className="text-sm text-teal-500">Request Submitted. Shahabas Reach out to you soon.</p>
               )}
 
-              <button type="submit" className="w-full py-2.5 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:shadow-[0_0_30px_rgba(254,31,25,0.5)] transition-all transform active:scale-[0.98]">
+              <button disabled={submitting} type="submit" className="w-full py-2.5 bg-primary text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:shadow-[0_0_30px_rgba(254,31,25,0.5)] transition-all transform active:scale-[0.98] disabled:opacity-60">
                 Send Message <Send size={18} />
               </button>
             </form>
