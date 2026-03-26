@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -12,46 +13,31 @@ import CustomCursor from './components/CustomCursor';
 import { Toaster } from 'react-hot-toast';
 
 const App = () => {
-  const [pathname, setPathname] = useState(window.location.pathname);
-
-  useEffect(() => {
-    const handleNavigation = () => setPathname(window.location.pathname);
-    window.addEventListener('popstate', handleNavigation);
-    return () => {
-      window.removeEventListener('popstate', handleNavigation);
-    };
-  }, []);
-
-  if (pathname.startsWith('/admin')) {
-    return (
-      <ContentProvider>
-        <Toaster position="top-right" />
-        <AdminPanel />
-      </ContentProvider>
-    );
-  }
-
   return (
     <ContentProvider>
       <Toaster position="top-right" />
-      <div className="relative min-h-screen">
-        <CustomCursor />
-
-        <Navbar />
-        
-        <main>
-          <Hero />
-          <About />
-          <Skills />
-          <Projects />
-          <Contact />
-        </main>
-
-        <Footer />
-
-        {/* Grid Pattern Overlay */}
-        <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-[999] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] blend-overlay"></div>
-      </div>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <div className="relative min-h-screen">
+              <CustomCursor />
+              <Navbar />
+              <main>
+                <Hero />
+                <About />
+                <Skills />
+                <Projects />
+                <Contact />
+              </main>
+              <Footer />
+              <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-[999] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] blend-overlay"></div>
+            </div>
+          }
+        />
+        <Route path="/admin/*" element={<AdminPanel />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </ContentProvider>
   );
 };
