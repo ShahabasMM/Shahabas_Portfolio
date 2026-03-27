@@ -38,19 +38,36 @@ const Navbar = () => {
     { name: "Contact", href: "#contact" },
   ];
 
-  const handleNavClick = (href) => {
-    const id = href.replace("#", "");
+  const scrollToId = (id) => {
     if (id === "home") {
-      setActiveSection("home");
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsMobileMenuOpen(false);
       return;
     }
-    const target = document.getElementById(id);
+    const target = document.querySelector(`#${id}`);
     if (!target) return;
+    const offset = 96;
+    const top = target.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top, behavior: "smooth" });
+  };
+
+  const handleNavClick = (href) => {
+    const id = href.replace("#", "");
+    const closeMenu = () => setIsMobileMenuOpen(false);
+
+    if (id === "home") {
+      setActiveSection("home");
+      closeMenu();
+      requestAnimationFrame(() => {
+        window.setTimeout(() => scrollToId("home"), 80);
+      });
+      return;
+    }
+    if (!document.querySelector(`#${id}`)) return;
     setActiveSection(id);
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-    setIsMobileMenuOpen(false);
+    closeMenu();
+    requestAnimationFrame(() => {
+      window.setTimeout(() => scrollToId(id), 80);
+    });
   };
 
   return (
@@ -61,6 +78,7 @@ const Navbar = () => {
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
+          onClick={() => handleNavClick("#home")}
           className="flex items-center gap-2 group cursor-pointer"
         >
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center group-hover:rotate-12 transition-transform shadow-[0_0_15px_rgba(254,31,25,0.5)]">

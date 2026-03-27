@@ -138,7 +138,7 @@ const ProjectDetailsModal = ({ project, onClose }) => {
         <motion.button
           type="button"
           onClick={onClose}
-          className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/78 backdrop-blur-xl"
           aria-label="Close project details"
         />
         <motion.div
@@ -146,7 +146,7 @@ const ProjectDetailsModal = ({ project, onClose }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 24, scale: 0.96 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative w-full max-w-2xl rounded-2xl border border-white/12 bg-[#111]/95 shadow-[0_18px_60px_rgba(0,0,0,0.55)] overflow-hidden"
+          className="relative w-full max-w-2xl rounded-2xl border border-white/12 bg-[#111]/80 backdrop-blur-2xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] overflow-hidden"
         >
           <div className="p-5 sm:p-6 border-b border-white/10 flex items-start justify-between gap-4">
             <div>

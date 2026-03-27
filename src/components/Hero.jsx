@@ -103,6 +103,31 @@ const Hero = () => {
           <span className="font-mono text-[9px] text-primary/80 mt-1">$ echo live</span>
         </motion.div>
 
+        <motion.div
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
+          className="md:hidden absolute bottom-20 left-4 w-36 h-20 glass rounded-xl border border-primary/25 shadow-[0_0_24px_rgba(254,31,25,0.22)] z-10 flex flex-col justify-center items-center backdrop-blur-xl"
+        >
+          <Terminal className="text-white w-5 h-5" />
+          <span className="font-mono text-[8px] text-primary/80 mt-1">$ mobile-live</span>
+        </motion.div>
+
+        <motion.div
+          animate={{ y: [0, 7, 0], rotate: [0, 2, 0] }}
+          transition={{ duration: 5.6, repeat: Infinity, ease: 'easeInOut', delay: 0.25 }}
+          className="md:hidden absolute top-28 right-4 w-24 h-24 glass rounded-xl border border-primary/20 shadow-[0_0_18px_rgba(254,31,25,0.2)] z-10 flex items-center justify-center"
+        >
+          <Code className="text-primary w-6 h-6" />
+        </motion.div>
+
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 6.2, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+          className="md:hidden absolute top-[36%] left-4 w-28 h-14 glass rounded-lg border border-primary/20 shadow-[0_0_16px_rgba(254,31,25,0.18)] z-10 flex items-center justify-center"
+        >
+          <span className="font-mono text-[8px] text-primary/80">$ build ok</span>
+        </motion.div>
+
         {/* Foreground Content */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
