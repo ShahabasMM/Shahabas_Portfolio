@@ -598,6 +598,7 @@ const AdminPanel = () => {
                   <AdminCard className="p-5 md:p-6 max-w-2xl">
                     <h2 className="text-2xl font-bold mb-2">Admin Settings</h2>
                     <p className="text-gray-400 mb-5">Signed in as {adminSession.user?.email}</p>
+
                     <ActionButton variant="primary" onClick={logoutAdmin} className="h-11 px-4">
                       <LogOut size={15} /> Logout
                     </ActionButton>

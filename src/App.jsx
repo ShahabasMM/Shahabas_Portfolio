@@ -31,7 +31,7 @@ const App = () => {
                 <Contact />
               </main>
               <Footer />
-              <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-[999] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] blend-overlay"></div>
+              <div className="fixed inset-0 pointer-events-none opacity-[0.08] z-[999] [background-image:radial-gradient(rgba(255,255,255,0.08)_0.5px,transparent_0.5px)] [background-size:3px_3px] mix-blend-overlay"></div>
             </div>
           }
         />

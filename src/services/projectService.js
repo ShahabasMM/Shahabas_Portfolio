@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient';
+import { assertSupabase } from '../lib/supabaseClient';
 
 const PROJECTS_TABLE = 'projects';
 const STORAGE_BUCKET = 'project-files';
@@ -28,6 +28,7 @@ const toDbPayload = (project) => ({
 const buildStoragePath = (fileName) => `files/${Date.now()}-${fileName.replace(/\s+/g, '-')}`;
 
 export const uploadProjectAttachment = async (file) => {
+  const supabase = assertSupabase();
   const storagePath = buildStoragePath(file.name);
   const { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(storagePath, file, {
     upsert: false,
@@ -40,6 +41,7 @@ export const uploadProjectAttachment = async (file) => {
 };
 
 export const fetchProjects = async () => {
+  const supabase = assertSupabase();
   const { data, error } = await supabase
     .from(PROJECTS_TABLE)
     .select('*')
@@ -49,6 +51,7 @@ export const fetchProjects = async () => {
 };
 
 export const createProject = async (payload) => {
+  const supabase = assertSupabase();
   const { data, error } = await supabase
     .from(PROJECTS_TABLE)
     .insert(toDbPayload(payload))
@@ -59,6 +62,7 @@ export const createProject = async (payload) => {
 };
 
 export const updateProjectById = async (id, payload) => {
+  const supabase = assertSupabase();
   const { data, error } = await supabase
     .from(PROJECTS_TABLE)
     .update(toDbPayload(payload))
@@ -70,6 +74,7 @@ export const updateProjectById = async (id, payload) => {
 };
 
 export const deleteProjectById = async (id) => {
+  const supabase = assertSupabase();
   const { error } = await supabase.from(PROJECTS_TABLE).delete().eq('id', id);
   if (error) throw error;
 };

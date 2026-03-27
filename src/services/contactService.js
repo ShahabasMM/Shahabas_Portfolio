@@ -1,8 +1,9 @@
-import { supabase } from '../lib/supabaseClient';
+import { assertSupabase } from '../lib/supabaseClient';
 
 const CONTACTS_TABLE = 'contacts';
 
 export const fetchContacts = async () => {
+  const supabase = assertSupabase();
   const { data, error } = await supabase
     .from(CONTACTS_TABLE)
     .select('*')
@@ -12,11 +13,13 @@ export const fetchContacts = async () => {
 };
 
 export const createContact = async (payload) => {
+  const supabase = assertSupabase();
   const { error } = await supabase.from(CONTACTS_TABLE).insert(payload);
   if (error) throw error;
 };
 
 export const updateContactById = async (id, payload) => {
+  const supabase = assertSupabase();
   const { data, error } = await supabase
     .from(CONTACTS_TABLE)
     .update(payload)
@@ -30,6 +33,7 @@ export const updateContactById = async (id, payload) => {
 };
 
 export const deleteContactById = async (id) => {
+  const supabase = assertSupabase();
   const { error } = await supabase.from(CONTACTS_TABLE).delete().eq('id', id);
   if (error) throw error;
 };

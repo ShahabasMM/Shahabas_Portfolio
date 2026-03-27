@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getSession, onAuthStateChanged, signInAdmin, signOutAdmin } from '../services/authService';
 import { createContact, deleteContactById, fetchContacts, updateContactById } from '../services/contactService';
 import { createProject, deleteProjectById, fetchProjects, mapProjectRecord, updateProjectById, uploadProjectAttachment } from '../services/projectService';
@@ -81,6 +81,12 @@ export const ContentProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading({ initial: false, projects: false, skills: false, contacts: false });
+      setAuthLoading(false);
+      return undefined;
+    }
+
     loadAll();
     const syncAuth = async () => {
       try {
@@ -104,6 +110,7 @@ export const ContentProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return undefined;
     const projectsChannel = supabase
       .channel('projects-changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'projects' }, (payload) => {
@@ -126,6 +133,7 @@ export const ContentProvider = ({ children }) => {
   }, [pulseId]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return undefined;
     const skillsChannel = supabase
       .channel('skills-changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'skills' }, (payload) => {
@@ -146,7 +154,7 @@ export const ContentProvider = ({ children }) => {
   }, [pulseId]);
 
   useEffect(() => {
-    if (!adminSession) return undefined;
+    if (!isSupabaseConfigured || !supabase || !adminSession) return undefined;
 
     const syncContacts = async () => {
       setLoading((prev) => ({ ...prev, contacts: true }));
