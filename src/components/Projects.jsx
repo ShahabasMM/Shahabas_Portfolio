@@ -125,6 +125,29 @@ const ProjectCard = ({ project, delay, isNew, onOpen }) => {
 const ProjectDetailsModal = ({ project, onClose }) => {
   if (!project) return null;
   const statusMeta = getProjectStatusMeta(project.status);
+  const { title, fileUrl, fileName } = project;
+
+  const handleDownload = async () => {
+    if (!fileUrl) return;
+    const name = getDownloadName(fileUrl, fileName, title);
+    const anchor = document.createElement('a');
+    anchor.style.display = 'none';
+
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error('download_failed');
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      anchor.href = objectUrl;
+      anchor.download = name;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      window.open(fileUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -195,14 +218,13 @@ const ProjectDetailsModal = ({ project, onClose }) => {
                 <Github size={15} /> GitHub
               </a>
               {project.fileUrl ? (
-                <a
-                  href={project.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={handleDownload}
                   className="px-4 py-2 rounded-lg border border-white/18 bg-white/[0.03] text-sm font-semibold hover:border-primary/50 transition-all inline-flex items-center gap-2"
                 >
                   <Download size={15} /> Download
-                </a>
+                </button>
               ) : null}
             </div>
           </div>
