@@ -16,6 +16,17 @@ const getDownloadName = (fileUrl, fileName, title) => {
   return `${title.replace(/\s+/g, '-').toLowerCase()}-attachment`;
 };
 
+const triggerFastDownload = (fileUrl, fileName) => {
+  const anchor = document.createElement('a');
+  anchor.style.display = 'none';
+  anchor.href = fileUrl;
+  anchor.download = fileName;
+  anchor.rel = 'noopener noreferrer';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+};
+
 const ProjectCard = ({ project, delay, isNew, onOpen }) => {
   const { title, description, tags, github, demo, status, fileUrl, fileName } = project;
   const statusMeta = getProjectStatusMeta(status);
@@ -24,23 +35,7 @@ const ProjectCard = ({ project, delay, isNew, onOpen }) => {
     event.stopPropagation();
     if (!fileUrl) return;
     const name = getDownloadName(fileUrl, fileName, title);
-    const anchor = document.createElement('a');
-    anchor.style.display = 'none';
-
-    try {
-      const response = await fetch(fileUrl);
-      if (!response.ok) throw new Error('download_failed');
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      anchor.href = objectUrl;
-      anchor.download = name;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(objectUrl);
-    } catch {
-      window.open(fileUrl, '_blank', 'noopener,noreferrer');
-    }
+    triggerFastDownload(fileUrl, name);
   };
 
   const openWithKeyboard = (event) => {
@@ -130,23 +125,7 @@ const ProjectDetailsModal = ({ project, onClose }) => {
   const handleDownload = async () => {
     if (!fileUrl) return;
     const name = getDownloadName(fileUrl, fileName, title);
-    const anchor = document.createElement('a');
-    anchor.style.display = 'none';
-
-    try {
-      const response = await fetch(fileUrl);
-      if (!response.ok) throw new Error('download_failed');
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      anchor.href = objectUrl;
-      anchor.download = name;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(objectUrl);
-    } catch {
-      window.open(fileUrl, '_blank', 'noopener,noreferrer');
-    }
+    triggerFastDownload(fileUrl, name);
   };
 
   return (
