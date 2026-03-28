@@ -21,7 +21,7 @@ import AdminTopbar from './ui/AdminTopbar';
 import AdminTableShell from './ui/AdminTableShell';
 import { PROJECT_STATUS_OPTIONS, getProjectStatusMeta } from '../../utils/projectStatus';
 
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 300 * 1024 * 1024;
 
 const managementItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -140,7 +140,7 @@ const ProjectForm = ({ initial, onSubmit, submitting }) => {
     const selected = event.target.files?.[0];
     if (!selected) return;
     if (selected.size > MAX_FILE_SIZE_BYTES) {
-      setError('File size must be 8MB or smaller.');
+      setError('File size must be 300MB or smaller.');
       event.target.value = '';
       return;
     }
